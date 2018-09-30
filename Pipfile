@@ -8,6 +8,8 @@ flask = "*"
 bcrypt = "*"
 redis = "*"
 flask-login = "*"
+"rfc3339" = "*"
+python-dateutil = "*"
 
 [dev-packages]
 pylint = "*"
