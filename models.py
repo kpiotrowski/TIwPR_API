@@ -200,3 +200,15 @@ def list_meetings(collection, filters, args):
     filters['_temp'] = {"$exists": False}
 
     return list_all(collection, filters, args)
+
+
+def meetings_change(collection, meeting_id_1, meeting_id_2):
+    meeting_1 = find_one(collection, meeting_id_1)
+    meeting_2 = find_one(collection, meeting_id_2)
+    if meeting_1 is None or meeting_2 is None:
+        return json_response({"message": "Meeting does not exist"}, 404)
+
+    meeting_1 = Meeting(**meeting_1)
+    meeting_2 = Meeting(**meeting_2)
+
+    pass

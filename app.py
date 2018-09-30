@@ -139,9 +139,11 @@ def meeting(meeting_id):
         return delete_one_response(db.meetings, meeting_id)
 
 
-# Moves meeting to the different room
-@app.route('/meetings/<meeting_id>/rooms/<room_id>', methods=['PATCH'])
-def meeting_move(meeting_id, room_id):
+# Changes rooms
+@app.route('/meetings/<meeting_id>/<meeting_id_2>', methods=['PATCH'])
+def meetings_rooms_change(meeting_id, meeting_id_2):
+
+
     pass
 
 
