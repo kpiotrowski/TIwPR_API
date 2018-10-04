@@ -67,11 +67,13 @@ class User:
             return json_response({"message": "User doesn't exist"}, 404)
 
         user = User(**user)
+        if user.e_tag != self.e_tag:
+            return json_response({"message": "ETag header is invalid"}, 400)
+
         if self.login != user.login:
             return json_response({"message": "You cannot change user login"}, 400)
 
         self._id = user._id
-
         return object_save(collection, self.to_dict())
 
     def to_dict(self):
@@ -81,7 +83,7 @@ class User:
 class Room:
 
     def __init__(self, **kwargs):
-        self._id = kwargs.get('id')
+        self._id = kwargs.get('_id')
         self.name = kwargs.get('name')
         self.description = kwargs.get('description')
         self.place = kwargs.get('place')
@@ -103,9 +105,12 @@ class Room:
         old_room = find_one(collection, old_id)
         if old_room is None:
             return json_response({"message": "Room doesn't exist"}, 404)
-
         old_room = Room(**old_room)
+        if old_room.e_tag != self.e_tag:
+            return json_response({"message": "ETag header is invalid"}, 400)
+
         self._id = old_room._id
+
         return object_save(collection, self.to_dict())
 
     def to_dict(self):
@@ -118,7 +123,7 @@ class Room:
 class Meeting:
 
     def __init__(self, **kwargs):
-        self._id = kwargs.get('id')
+        self._id = kwargs.get('_id')
         self.name = kwargs.get('name')
         self.description = kwargs.get('description')
         self.start_time = kwargs.get('start_time')

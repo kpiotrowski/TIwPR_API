@@ -17,6 +17,9 @@ def before_request():
         if not request.form and not request.data:
             return json_response({"message": "Missing request body"}, 400)
 
+    if request.method == 'PUT' and not request.headers.get('If-Match'):
+        return json_response({"message": "Missing If-Match header"}, 400)
+
     if request.endpoint == 'user_login' or (request.endpoint == 'users' and request.method == 'POST'):
         return
 
@@ -53,7 +56,7 @@ def user(u_login):
         return json_response({"message": "You are not allowed to see or modify different user"}, 403)
 
     if request.method == 'PUT':
-        user_data = User(**get_request_data(request))
+        user_data = User(**get_request_data(request), e_tag=request.headers.get('If-Match'))
         if not user_data.validate():
             return json_response({"message": "User form is invalid"}, 400)
 
@@ -94,7 +97,7 @@ def rooms():
 @app.route('/rooms/<room_id>', methods=['GET', 'PUT', 'DELETE'])
 def room(room_id):
     if request.method == 'PUT':
-        room_data = Room(**get_request_data(request))
+        room_data = Room(**get_request_data(request), e_tag=request.headers.get('If-Match'))
         if not room_data.validate():
             return json_response({"message": "Room form is invalid"}, 400)
 
@@ -123,7 +126,7 @@ def meetings():
 @app.route('/meetings/<meeting_id>', methods=['GET', 'PUT', 'DELETE'])
 def meeting(meeting_id):
     if request.method == 'PUT':
-        meeting_data = Meeting(**get_request_data(request))
+        meeting_data = Meeting(**get_request_data(request), e_tag=request.headers.get('If-Match'))
         if not meeting_data.validate():
             return json_response({"message": "Meeting form is invalid"}, 400)
 

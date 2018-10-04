@@ -81,16 +81,19 @@ def find_one_response(collection, object_id, filter_key='_id'):
         if 'hash' in k:
             data[k] = "***"
 
-    return json_response(data, 200)
+    return json_response(data, 200, headers)
 
 
 def object_save(collection, object_data, location=""):
     headers = {}
     create = '_id' not in object_data
+    object_data['e_tag'] = str(uuid.uuid4())
 
     key = str(collection.save(object_data))
     if create:
         status = 201
+        if location == "users":
+            key = object_data.get('login')
         headers['Location'] = f"/{location}/{key}"
     else:
         status = 200
