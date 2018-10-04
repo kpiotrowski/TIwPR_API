@@ -1,4 +1,6 @@
 import datetime
+import uuid
+
 from dateutil import parser
 
 import bcrypt
@@ -26,6 +28,7 @@ class User:
         self.login = kwargs.get('login')
         self.password_hash = kwargs.get('password_hash')
         self.name = kwargs.get('name')
+        self.e_tag = kwargs.get('e_tag', str(uuid.uuid4()))
 
         if 'password' in kwargs:
             self.password_hash = bcrypt.hashpw(kwargs.get('password').encode('utf-8'), bcrypt.gensalt())
@@ -56,7 +59,7 @@ class User:
         if find_one(collection, self.login, 'login') is not None:
             return json_response({"message": "User already exists"}, 409)
 
-        return object_save(collection, self.to_dict())
+        return object_save(collection, self.to_dict(), "users")
 
     def update(self, collection, old_login):
         user = find_one(collection, old_login, 'login')
@@ -68,6 +71,7 @@ class User:
             return json_response({"message": "You cannot change user login"}, 400)
 
         self._id = user._id
+
         return object_save(collection, self.to_dict())
 
     def to_dict(self):
@@ -81,6 +85,7 @@ class Room:
         self.name = kwargs.get('name')
         self.description = kwargs.get('description')
         self.place = kwargs.get('place')
+        self.e_tag = kwargs.get('e_tag', str(uuid.uuid4()))
 
     def get_id(self):
         return self._id
@@ -92,7 +97,7 @@ class Room:
         return True
 
     def create(self, collection):
-        return object_save(collection, self.to_dict())
+        return object_save(collection, self.to_dict(), "rooms")
 
     def update(self, collection, old_id):
         old_room = find_one(collection, old_id)
@@ -120,6 +125,7 @@ class Meeting:
         self.end_time = kwargs.get('end_time')
         self.room_id = kwargs.get('room_id')
         self.user_id = kwargs.get('user_id')
+        self.e_tag = kwargs.get('e_tag', str(uuid.uuid4()))
 
         if self.start_time is not None:
             self.start_time = rfc3339.rfc3339(parser(self.start_time), utc=True)

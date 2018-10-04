@@ -10,10 +10,6 @@ app = Flask(__name__)
 client = pymongo.MongoClient()
 db = client.tiwpr
 
-'''
-
-'''
-
 
 @app.before_request
 def before_request():
@@ -118,7 +114,7 @@ def room(room_id):
 @app.route('/meetings', methods=['GET', 'POST'])
 def meetings():
     if request.method == 'POST':
-        return generate_single_post_url_response(db.meetings)
+        return generate_single_post_url_response(db.meetings, g.user, "meetings")
     else:
         return list_meetings(db.meetings, {}, request.args)
 
@@ -137,14 +133,6 @@ def meeting(meeting_id):
         return find_one_response(db.meetings, meeting_id)
     else:
         return delete_one_response(db.meetings, meeting_id)
-
-
-# Changes rooms
-@app.route('/meetings/<meeting_id>/<meeting_id_2>', methods=['PATCH'])
-def meetings_rooms_change(meeting_id, meeting_id_2):
-
-
-    pass
 
 
 # List meetings for the room

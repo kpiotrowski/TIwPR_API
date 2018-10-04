@@ -46,6 +46,8 @@ def list_all(collection, filters=None, arguments=None):
     result = [x for x in data]
     for x in result:
         x['_id'] = str(x['_id'])
+        if 'e_tag' in x:
+            x.pop('e_tag')
 
     return json_response({"items": result, "page": page, "all_count": count}, 200)
 
@@ -64,10 +66,15 @@ def find_one(collection, object_id, filter_key='_id'):
 
 def find_one_response(collection, object_id, filter_key='_id'):
     data = find_one(collection, object_id, filter_key)
+    headers = {}
 
     if data is None:
         return json_response({"message": "Not found", "status": "404"}, 404)
     data['_id'] = str(data['_id'])
+    if 'e_tag' in data:
+        headers['ETag'] = data['e_tag']
+        data.pop('e_tag')
+
     for k, v in data.items():
         if isinstance(v, bytes):
             data[k] = v.decode('utf-8')
@@ -77,16 +84,19 @@ def find_one_response(collection, object_id, filter_key='_id'):
     return json_response(data, 200)
 
 
-def object_save(collection, object_data):
-    if '_id' not in object_data:
-        status = 201
-        msg = "Successfully created object"
-    else:
-        status = 200
-        msg = "Successfully updated object"
+def object_save(collection, object_data, location=""):
+    headers = {}
+    create = '_id' not in object_data
 
     key = str(collection.save(object_data))
-    return json_response({"_id": key, "message": msg}, status)
+    if create:
+        status = 201
+        headers['Location'] = f"/{location}/{key}"
+    else:
+        status = 200
+    headers['ETag'] = object_data.get('e_tag')
+
+    return json_response("", status, headers)
 
 
 def delete_one_response(collection, object_id,  filter_key='_id'):
@@ -107,12 +117,15 @@ def delete_many(collection, filters):
     return json_response("", 204)
 
 
-def generate_single_post_url_response(collection):
-    key = str(collection.save({'_temp': True}))
+def generate_single_post_url_response(collection, user, location=""):
+    existing = collection.find_one({'_temp': True, 'user_id': user.get_id()})
+    if existing is not None:
+        key = str(existing['_id'])
+        e_tag = existing.get('e_tag')
+    else:
+        e_tag = str(uuid.uuid4())
+        key = str(collection.save({'e_tag': e_tag, '_temp': True, 'user_id': user.get_id()}))
 
-    return json_response({
-        "url": f"{config.HOST}/meetings/{key}",
-        "_id": key,
-        "method": "PUT",
-        "Message:": "Created temporary object. Use put method to update it."
-    }, 202)
+    headers = {'Location': f"/{location}/{key}", 'ETag': e_tag}
+
+    return json_response("", 201, headers)

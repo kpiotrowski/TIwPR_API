@@ -12,11 +12,16 @@ def get_request_data(request):
     return data
 
 
-def json_response(dict_obj, code):
+def json_response(dict_obj, code, headers=None):
     if isinstance(dict_obj, (dict, list)):
         data = json.dumps(dict_obj)
     else:
         data = dict_obj
     resp = Response(response=data, status=code,
                     mimetype="application/json")
+
+    if headers is not None:
+        for header_key in headers:
+            resp.headers[header_key] = headers[header_key]
+
     return resp
