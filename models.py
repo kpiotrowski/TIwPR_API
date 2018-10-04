@@ -1,6 +1,7 @@
 import datetime
 import uuid
 
+from bson import ObjectId
 from dateutil import parser
 
 import bcrypt
@@ -117,7 +118,22 @@ class Room:
         return {k: v for k, v in self.__dict__.items() if v is not None}
 
     def available(self, meetings_collection, start, end, meeting_id=None):
-        pass
+        filter_query = {
+            "$or": [
+                {
+                    "start_time": {"$lt": start}, "end_time": {"$gt": start}
+                },
+                {
+                    "start_time": {"$lt": end}, "end_time": {"$gt": end}
+                }
+            ], "room_id": ObjectId(self._id)
+        }
+        if meeting_id is not None:
+            filter_query["_id"] = {"$ne": meeting_id}
+
+        if not meetings_collection.find_one(filter_query):
+            return True
+        return False
 
 
 class Meeting:
@@ -133,9 +149,9 @@ class Meeting:
         self.e_tag = kwargs.get('e_tag', str(uuid.uuid4()))
 
         if self.start_time is not None:
-            self.start_time = rfc3339.rfc3339(parser(self.start_time), utc=True)
+            self.start_time = rfc3339.rfc3339(parser.parse(self.start_time), utc=True)
         if self.end_time is not None:
-            self.end_time = rfc3339.rfc3339(parser(self.end_time), utc=True)
+            self.end_time = rfc3339.rfc3339(parser.parse(self.end_time), utc=True)
 
     def validate(self):
         for field in [self.name, self.start_time, self.end_time]:
@@ -151,6 +167,8 @@ class Meeting:
         if old_meeting is None:
             return json_response({"message": "Meeting doesn't exist"}, 404)
         old_meeting = Meeting(**old_meeting)
+        self._id = old_meeting._id
+
         if self.room_id is None:
             self.room_id = old_meeting.room_id
 
@@ -165,9 +183,9 @@ class Meeting:
             selected_room = None
             data = rooms_collection.find({})
             for x in data:
-                x = Room(**x)
-                if x.available(collection, self.start_time, self.end_time):
-                    selected_room = x
+                x_room = Room(**x)
+                if x_room.available(collection, self.start_time, self.end_time):
+                    selected_room = x_room
                     break
 
             if selected_room is None:
@@ -211,15 +229,3 @@ def list_meetings(collection, filters, args):
     filters['_temp'] = {"$exists": False}
 
     return list_all(collection, filters, args)
-
-
-def meetings_change(collection, meeting_id_1, meeting_id_2):
-    meeting_1 = find_one(collection, meeting_id_1)
-    meeting_2 = find_one(collection, meeting_id_2)
-    if meeting_1 is None or meeting_2 is None:
-        return json_response({"message": "Meeting does not exist"}, 404)
-
-    meeting_1 = Meeting(**meeting_1)
-    meeting_2 = Meeting(**meeting_2)
-
-    pass

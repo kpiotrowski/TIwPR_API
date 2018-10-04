@@ -160,6 +160,6 @@ def user_meetings(u_login):
         if g.user.get_id() != user_data.get_id():
             return json_response({"message": "You cannot delete different user meetings"}, 403)
 
-        return delete_many(db.meetings, {'user_id': user_data.get_id()})
+        return delete_many(db.meetings, {'user_id': str(user_data.get_id())})
     else:
-        return list_meetings(db.meetings, {'user_id': user_data.get_id()}, request.args)
+        return list_meetings(db.meetings, {'user_id': str(user_data.get_id())}, request.args)
