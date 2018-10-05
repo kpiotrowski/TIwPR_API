@@ -13,7 +13,7 @@ db = client.tiwpr
 
 @app.before_request
 def before_request():
-    if request.method in ['PUT', 'POST'] and not (request.method == 'POST' and request.endpoint == 'meetings'):
+    if request.method in ['PUT', 'POST', 'PATCH'] and not (request.method == 'POST' and request.endpoint == 'meetings'):
         if not request.form and not request.data:
             return json_response({"message": "Missing request body"}, 400)
 
@@ -163,3 +163,24 @@ def user_meetings(u_login):
         return delete_many(db.meetings, {'user_id': str(user_data.get_id())})
     else:
         return list_meetings(db.meetings, {'user_id': str(user_data.get_id())}, request.args)
+
+
+# Transfer meetings to the different user
+@app.route('/users/<u_login>/meetings', methods=['PATCH'])
+def transfer_meetings(u_login):
+    user_data = find_one(db.users, u_login, 'login')
+    if user_data is None:
+        return json_response({"message": "User does not exist"}, 404)
+
+    user_data = User(**user_data)
+    data = get_request_data(request)
+    if data.get('user_login') is None:
+        return json_response({"message": "Missing user_login in the request body"}, 400)
+
+    new_user_data = find_one(db.users, data.get('user_login'), 'login')
+    if new_user_data is None:
+        return json_response({"message": "User does not exist"}, 404)
+    new_user_data = User(**new_user_data)
+
+    db.meetings.find_and_modify(query={"user_id": str(user_data.get_id())}, update={"$set": {"user_id": str(new_user_data.get_id())}})
+    return json_response("", 200)

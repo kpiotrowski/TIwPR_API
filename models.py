@@ -167,6 +167,9 @@ class Meeting:
         if old_meeting is None:
             return json_response({"message": "Meeting doesn't exist"}, 404)
         old_meeting = Meeting(**old_meeting)
+        if old_meeting.e_tag != self.e_tag:
+            return json_response({"message": "ETag header is invalid"}, 400)
+
         self._id = old_meeting._id
 
         if self.room_id is None:
